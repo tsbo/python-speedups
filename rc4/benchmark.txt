@@ -1,0 +1,11 @@
+How to measure speed of program:
+
+1. download test image 
+
+curl  https://downloads.atlassian.com/software/sourcetree/windows/SourceTreeSetup_1.8.3.exe --output testimage.bin
+
+2 run benchmark
+
+python -m profile -s cumtime  rc4file.py -i testimage.bin  -o test1.enc -k 12345678890-=
+
+
