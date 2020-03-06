@@ -3,6 +3,7 @@ import sys
 import os
 import getpass
 #import timeit
+import time
 
 from rc4 import *
 
@@ -47,11 +48,16 @@ coder = NaiveRC4(config.key)
 outf = open(config.output, 'wb')
 inf = open(config.input, 'rb')
 
+filesize=0
+start_time = time.time()
 buf = inf.read(BUF_SIZE)   
 while buf:
 #    print 'r', timeit.timeit()
-    processed = coder.process(buf)
+    processed = coder.process_inline([ord (x) for x in buf])
 #    print 'p', timeit.timeit()
     outf.write("".join([chr(x) for x in processed]))
+    filesize += len(processed)
 #    print 'w', timeit.timeit()
     buf = inf.read(BUF_SIZE)
+
+print 'processed %d bytes in %.2f seconds' % (filesize, time.time() - start_time)

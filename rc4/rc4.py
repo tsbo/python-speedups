@@ -12,10 +12,11 @@ class NaiveRC4(object):
         self.KSA(key)
         #throw away first 3000 bytes
         for i in range(3000):
-            _ = self.process(['\x00'])
+            _ = self.process([0])
 
     def encrypt(self, data):
-        res = self.process(data)
+        tmp = [ord (x) for x in data]
+        res = self.process(tmp)
         return "".join(['%02X' % x for x in res])
 
     def decrypt(self, data):
@@ -24,15 +25,30 @@ class NaiveRC4(object):
         return "".join ([chr(x) for x in res])
 
     def process(self, data):
+        res = [x ^ self.PRGA() for x in data]
+        return res
+
+    def process_inline(self, data):
+        i, j, s = self._i, self._j, self._s
         res = []
-        for x in data:
-            decoded = ''
-            if isinstance(x, int):
-                decoded = x ^ self.PRGA()
-            else:
-                decoded = ord(x) ^ self.PRGA()
-            res.append(decoded)
-        return res        
+        for item in data:
+            i = (i + 1) % 256
+            j = (j + s[i]) % 256
+            s[i], s[j] = s[j], s[i]
+            val = s[(s[i] + s[j]) % 256]
+            res.append(item ^ val)
+        self._i, self._j, self._s = i, j, s
+        return res
+    
+##    
+##        for x in data:
+##            decoded = ''
+##            if isinstance(x, int):
+##                decoded = x ^ self.PRGA()
+##            else:
+##                decoded = ord(x) ^ self.PRGA()
+##            res.append(decoded)
+##        return res        
 
     def KSA(self, key):
         for i in range(256): self._s[i] = i
@@ -69,14 +85,15 @@ if __name__ == '__main__':
     
     # ciphertext should be BBF316E8D940AF0AD3
     expected=s.encrypt(plaintext)
-    print 'Output is expected to be 452760F1FA169D8A10. It is:' + expected
+    print 'Output is expected to be 452760F1FA169D8A10(BBF316E8D940AF0AD3 when first 3000 bytes are not skipped). It is:' + expected
 
     d1 = NaiveRC4(key)
     assert plaintext == d1.decrypt(expected)
 
     s = NaiveRC4('Wiki')
-    assert s.encrypt('pedia') == 'D01C2F50CD' # or '1021BF0420' when not skipping firs 3000 bytes
+    assert s.encrypt('pedia') == 'D01C2F50CD' # or '1021BF0420'
 
     s = NaiveRC4('Secret')
-    assert s.encrypt('Attack at dawn') == '796DB9175E2F7BA3D812AA506A84' # or '45A01F645FC35B383552544B9BF5' when skipping
+    assert s.encrypt('Attack at dawn') == '796DB9175E2F7BA3D812AA506A84'
+    # or '45A01F645FC35B383552544B9BF5' when first 3000 bytes are not dropped
     
